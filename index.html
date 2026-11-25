@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
 :root {
   --bg: #f2f2f7; --card: #ffffff; --card2: #f7f7fa; --text: #1c1c1e; --sub: #6b6b72; --faint: #a1a1a8;
@@ -229,6 +229,12 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .toast.xp { background: linear-gradient(135deg, #667eea, #764ba2); }
 @keyframes tin { from { transform: translateY(-14px); opacity: 0; } to { transform: none; opacity: 1; } }
 
+.feed-card .feed-title { font-size: 17px; font-weight: 700; line-height: 1.3; margin: 10px 0 3px; }
+.feed-card .feed-title a { color: var(--text); }
+.feed-actions { display: flex; gap: 6px; margin-top: 12px; }
+.feed-actions .btn { flex: 1; padding: 8px 4px; min-height: 38px; font-size: 13.5px; border-radius: 10px; }
+.feed-actions .btn:last-child:not(.sm) { flex: 0 0 44px; }
+.card.dim { opacity: .62; }
 .img-preview { width: 100%; border-radius: 16px; display: block; box-shadow: var(--shadow); background: var(--fill); }
 .share-wrap { max-width: 300px; margin: 0 auto 14px; }
 
@@ -273,25 +279,25 @@ const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.
 const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 
 // ---------- default data ----------
-const DEFAULT_HABITS = [
-  { id: 'gym', name: 'Gym', emoji: '🏋️', cat: 'Health' },
-  { id: 'read', name: 'Read', emoji: '📖', cat: 'Mind' },
-  { id: 'app', name: 'Build the app', emoji: '💻', cat: 'Work' },
-  { id: 'model', name: 'Work on the model', emoji: '📈', cat: 'Work' },
-  { id: 'sleep', name: 'Sleep on time', emoji: '😴', cat: 'Health' },
-  { id: 'prayer', name: 'Prayers', emoji: '🕌', cat: 'Faith', parts: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] },
+const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// Starter menus shown in Set up. The app ships with a few generic picks; everything personal is chosen on the phone.
+const HABIT_MENU = [
+  ['🏋️', 'Exercise', 'Health'], ['🚶', 'Walk 10 minutes', 'Health'], ['🤸', 'Stretch', 'Health'], ['💧', 'Drink water', 'Health'],
+  ['😴', 'Sleep on time', 'Health'], ['📖', 'Read', 'Mind'], ['✍️', 'Journal', 'Mind'], ['🧘', 'Meditate', 'Mind'],
+  ['🙏', 'Gratitude', 'Mind'], ['📵', 'Phone-free first hour', 'Mind'], ['🗣️', 'Practise a language', 'Mind'], ['📚', 'Study', 'Work'],
+  ['💻', 'Build a project', 'Work'], ['📞', 'Call family', 'Social'], ['📗', 'Read scripture', 'Faith'],
+  ['🕌', 'Prayer (5 daily)', 'Faith', ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']],
 ];
-const DEFAULT_TOPICS = [
-  { id: 'news', name: 'World news', emoji: '📰', goal: 'Stay informed from credible, balanced sources', level: 'Intermediate', focus: true },
-  { id: 'invest', name: 'Investing & trading', emoji: '💹', goal: 'Understand markets well before I make decisions', level: 'Beginner', focus: true },
-  { id: 'econ', name: 'Economies', emoji: '📊', goal: 'Know how the major economies and my region are doing', level: 'Intermediate', focus: true },
-  { id: 'model', name: 'My model', emoji: '🧮', goal: 'Build and validate the model I am working on', level: 'Intermediate', focus: false },
-  { id: 'sport', name: 'Sports & training', emoji: '🏋️', goal: 'Improve technique in the sports I practise', level: 'Intermediate', focus: false },
-  { id: 'culture', name: 'Countries & cultures', emoji: '🌍', goal: 'Learn one country in depth each month', level: 'Beginner', focus: true },
-  { id: 'nature', name: 'Nature & science', emoji: '🌿', goal: '', level: 'Beginner', focus: false },
-  { id: 'islam', name: 'Islam', emoji: '🕌', goal: 'Deepen my knowledge of the faith', level: 'Intermediate', focus: true },
-  { id: 'tech', name: 'App building', emoji: '💻', goal: 'Ship my self-development app', level: 'Intermediate', focus: false },
+const TOPIC_MENU = [
+  ['📰', 'World news'], ['💰', 'Personal finance'], ['💹', 'Investing & markets'], ['📊', 'Economics'], ['💻', 'Technology & AI'],
+  ['🌿', 'Science & nature'], ['💪', 'Health & fitness'], ['🧠', 'Psychology'], ['🏛️', 'History & cultures'], ['🌍', 'Countries & travel'],
+  ['🤔', 'Philosophy'], ['🕊️', 'Faith & spirituality'], ['🎨', 'Literature & arts'], ['🗣️', 'Languages'], ['🚀', 'Career & leadership'],
+  ['👨‍👩‍👧', 'Family & parenting'], ['📈', 'Data & statistics'],
 ];
+const habitFromMenu = m => ({ id: slug(m[1]), emoji: m[0], name: m[1], cat: m[2], ...(m[3] ? { parts: m[3] } : {}) });
+const topicFromMenu = m => ({ id: slug(m[1]), emoji: m[0], name: m[1], goal: '', level: 'Beginner', focus: true });
+const DEFAULT_HABITS = ['Exercise', 'Read', 'Journal', 'Sleep on time'].map(n => habitFromMenu(HABIT_MENU.find(m => m[1] === n)));
+const DEFAULT_TOPICS = ['World news', 'Personal finance', 'Health & fitness', 'Science & nature', 'Technology & AI', 'History & cultures'].map(n => topicFromMenu(TOPIC_MENU.find(m => m[1] === n)));
 
 function defaultState() {
   return {
@@ -299,7 +305,7 @@ function defaultState() {
     settings: {
       name: '', about: '', reminderTime: '08:00', theme: 'auto',
       claudeMode: 'app', apiKey: '', model: 'claude-sonnet-5-5', sourceLangs: 'English',
-      languages: ['Arabic', 'English', 'Russian', 'Kazakh'], currentLang: 'Arabic',
+      languages: ['English'], currentLang: 'English',
       share: { name: true, habits: true, stats: true, lesson: true, reading: true, goals: true, format: 'story' },
       lastBackup: null, setupDone: false, includeLibrary: true, includeNotes: false,
     },
@@ -313,6 +319,7 @@ function defaultState() {
     contacts: [], interactions: [], relPlans: '',
     xp: { total: 0, history: [], keys: {} }, streak: { current: 0, longest: 0, last: null }, badges: {},
     timers: { workout: null, focus: null }, draft: null,
+    feed: { days: {}, next: 0, perAspect: 2, aspectsPerDay: 3, always: [], nope: [], plan: null },
   };
 }
 
@@ -324,6 +331,7 @@ function migrate(data) {
   s.xp = Object.assign({ total: 0, history: [], keys: {} }, s.xp || {});
   s.streak = Object.assign({ current: 0, longest: 0, last: null }, s.streak || {});
   s.timers = Object.assign({ workout: null, focus: null }, s.timers || {});
+  s.feed = Object.assign(defaultState().feed, s.feed || {});
   return s;
 }
 
@@ -362,6 +370,7 @@ const XP = {
   task: 3, focus: 8, focus_bonus: 2, project_create: 15, project_done: 50,
   vocab_add: 1, vocab_example: 1, vocab_review: 2, practice: 10, interaction: 5, idea: 3,
   source_add: 1, source_done: 20, reading: 5, goals_set: 3, goal_done: 2, claude: 2, streak_bonus: 5,
+  feed_read: 2, feed_done: 5,
 };
 const XP_LABEL = {
   journal: 'Journal entry', gratitude: 'Gratitude', lesson: 'Lesson learned', workout: 'Workout', habit: 'Habit', prayer: 'Prayer',
@@ -370,6 +379,7 @@ const XP_LABEL = {
   vocab_review: 'Word reviewed', practice: 'Language practice', interaction: 'Time with people', idea: 'New idea',
   source_add: 'Source added', source_done: 'Finished a source', reading: 'Reading session', goals_set: "Set today's goals",
   goal_done: 'Goal done', claude: 'Learning with Claude', streak_bonus: 'Streak bonus',
+  feed_read: 'Feed card', feed_done: "Finished today's feed",
 };
 const LEVELS = [0, 50, 150, 300, 500, 800, 1200, 1700, 2300, 3000, 3800, 4700, 5700, 6800, 8000, 9300, 10700, 12200, 13800, 15500];
 const LEVEL_TITLES = ['Beginner', 'Novice', 'Learner', 'Apprentice', 'Practitioner', 'Dedicated', 'Skilled', 'Advanced', 'Expert', 'Master',
@@ -421,7 +431,7 @@ function habitCompletions(s = S) {
   }
   return n;
 }
-function fullPrayerDays(s = S) {
+function fullPartsDays(s = S) {
   const h = s.habits.find(x => x.parts); if (!h) return 0;
   return Object.values(s.habitLog).filter(l => Array.isArray(l[h.id]) && l[h.id].length >= h.parts.length).length;
 }
@@ -444,7 +454,8 @@ const BADGES = [
   ['gym_regular', 'Gym Regular', 'Log 20 workouts', '🏋️', 'Health', s => s.workouts.length, 20],
   ['sleep_champ', 'Sleep Champion', 'Log 30 nights of sleep', '😴', 'Health', s => s.sleep.length, 30],
   ['habit_builder', 'Habit Builder', 'Complete 50 habits', '✅', 'Health', s => habitCompletions(s), 50],
-  ['steadfast', 'Steadfast', 'All five prayers on 30 days', '🕌', 'Faith', s => fullPrayerDays(s), 30],
+  ['steadfast', 'Full House', 'Complete every part of a multi-part habit on 30 days', '🏅', 'Progress', s => fullPartsDays(s), 30],
+  ['feed7', 'Daily Learner', 'Finish your growth feed on 7 days', '🌱', 'Learning', s => Object.values((s.feed || {}).days || {}).filter(d => d.finished).length, 7],
   ['taskmaster', 'Taskmaster', 'Complete 25 tasks', '✔️', 'Work', s => s.tasks.filter(t => t.done).length, 25],
   ['pioneer', 'Project Pioneer', 'Create 5 projects', '🚀', 'Work', s => s.projects.length, 5],
   ['study_guru', 'Study Guru', 'Log 30 focus sessions', '📚', 'Work', s => s.sessions.length, 30],
@@ -510,7 +521,7 @@ function autoHabit(hid) { const h = byId(S.habits, hid); if (h && !h.parts && !h
 /* =========================================================================
    UI plumbing: routing, event delegation, sheets, toasts, small charts
    ========================================================================= */
-const R = { tab: 'today', sub: { learn: 'library', journal: 'write', track: 'habits' }, more: null, filters: {} };
+const R = { tab: 'today', sub: { learn: 'feed', journal: 'write', track: 'habits' }, more: null, filters: {} };
 const VIEWS = {};      // tab -> () => html
 const A = {};          // click actions: data-a="name"
 const F = {};          // form submits: data-f="name"
@@ -746,6 +757,9 @@ VIEWS.today = () => {
   html += `<div class="card"><div class="card-head"><h3>✅ Habits</h3><button class="link" data-a="go" data-tab="track" data-sub="habits">${doneH}/${S.habits.length} · Manage</button></div>
     ${S.habits.length ? `<ul class="list">${S.habits.map(h => habitRowToday(h)).join('')}</ul>` : empty('✅', 'No habits yet. Add some in Track.')}</div>`;
 
+  // growth feed
+  html += feedTodayCard();
+
   // quick log
   html += `<div class="card"><div class="card-head"><h3>⚡ Quick log</h3></div><div class="quick">
     <button data-a="qJournal"><span class="e">✍️</span>Journal</button>
@@ -761,9 +775,6 @@ VIEWS.today = () => {
   html += `<div class="card"><div class="card-head"><h3>📚 ${reading.length ? 'Reading now' : 'Up next'}</h3><button class="link" data-a="go" data-tab="learn" data-sub="library">Library</button></div>
     ${next.length ? `<ul class="list">${next.map(it => libRow(it, true)).join('')}</ul>` : `<div class="small muted mb">Your library is empty. Add what you're reading, or ask Claude for suggestions.</div><div class="btn-row"><button class="btn soft sm" data-a="libAdd">Add a source</button><button class="btn soft sm" data-a="ask" data-type="reading">Ask Claude</button></div>`}</div>`;
 
-  // claude
-  html += `<div class="card"><div class="card-head"><h3>✨ Learn with Claude</h3><button class="link" data-a="go" data-tab="learn" data-sub="ask">All</button></div>
-    <div class="chips wrap">${['briefing', 'reading', 'week', 'explore'].map(id => { const t = askType(id); return `<button class="chip" data-a="ask" data-type="${id}">${t.icon} ${t.title}</button>`; }).join('')}</div></div>`;
 
   // coming up
   const soon = comingUp();
@@ -826,17 +837,37 @@ A.qFocus = () => { R.tab = 'track'; R.sub.track = 'work'; render(); };
 A.qIdea = () => openIdeaSheet();
 
 // first-run setup
-A.setup = () => openSheet('Set up', () => `
-  <form data-f="setupSave">
-    ${field('Your first name', `<input type="text" name="name" value="${esc(S.settings.name)}" placeholder="Shown on your Today screen and share card">`)}
-    ${field('About you (for Claude)', `<textarea name="about" placeholder="Your work, what you're studying, the model you're building, the sports you practise, languages you read…">${esc(S.settings.about)}</textarea>`, 'Only sent to Claude when you tap an Ask Claude button. Helps it pitch suggestions at your level.')}
-    <div class="section-label" style="margin-top:4px">Topics for your daily briefing</div>
-    <div class="chips wrap mb">${S.topics.map(t => `<button type="button" class="chip ${t.focus ? 'on' : ''}" data-a="setupTopic" data-id="${t.id}">${t.emoji} ${esc(t.name)}</button>`).join('')}</div>
-    <div class="hint">You can edit, add or remove topics later in Learn → Topics.</div>
-    ${field('Daily reminder time', `<input type="time" name="reminderTime" value="${esc(S.settings.reminderTime)}">`, 'One reminder a day, added to your iPhone Calendar. No other notifications.')}
+A.setup = () => openSheet('Set up', () => {
+  const st = S.settings;
+  const extraT = TOPIC_MENU.filter(m => !S.topics.some(x => x.id === slug(m[1]) || x.name.toLowerCase() === m[1].toLowerCase()));
+  const extraH = HABIT_MENU.filter(m => !S.habits.some(x => x.id === slug(m[1]) || x.name.toLowerCase() === m[1].toLowerCase()));
+  return `<form data-f="setupSave">
+    ${field('Your first name', `<input type="text" name="name" data-ch="setupField" value="${esc(st.name)}" placeholder="Shown on your Today screen and share card">`)}
+    ${field('About you (for Claude)', `<textarea name="about" data-ch="setupField" placeholder="Your work or studies, goals, the sports you practise, languages you read…">${esc(st.about)}</textarea>`, 'Keep it short. Only sent to Claude when you tap an Ask Claude button. Details for each area go in its topic.')}
+    <div class="section-label" style="margin-top:4px">Topics for suggestions and your feed</div>
+    <div class="chips wrap mb">${S.topics.map(x => `<button type="button" class="chip ${x.focus ? 'on' : ''}" data-a="setupTopic" data-id="${x.id}">${x.emoji} ${esc(x.name)}</button>`).join('')}${extraT.map(m => `<button type="button" class="chip" data-a="setupTopic" data-id="menu:${slug(m[1])}">${m[0]} ${esc(m[1])}</button>`).join('')}</div>
+    <div class="hint">Edit goals and details for each topic later in Learn → Topics.</div>
+    <div class="section-label">Daily habits</div>
+    <div class="chips wrap mb">${S.habits.map(h => `<button type="button" class="chip on" data-a="setupHabit" data-id="${h.id}">${h.emoji} ${esc(h.name)}</button>`).join('')}${extraH.map(m => `<button type="button" class="chip" data-a="setupHabit" data-id="menu:${slug(m[1])}">${m[0]} ${esc(m[1])}</button>`).join('')}</div>
+    <div class="hint">Rename or add your own habits later in Track → Habits.</div>
+    ${field('Daily reminder time', `<input type="time" name="reminderTime" data-ch="setupField" value="${esc(st.reminderTime)}">`, 'One reminder a day, added to your iPhone Calendar. No other notifications.')}
     <button class="btn primary block">Save</button>
-  </form>`);
-A.setupTopic = el => { const t = byId(S.topics, el.dataset.id); t.focus = !t.focus; el.classList.toggle('on', t.focus); save(); };
+  </form>`;
+});
+CH.setupField = el => { S.settings[el.name] = el.value; save(); };
+A.setupTopic = el => {
+  const id = el.dataset.id;
+  if (id.startsWith('menu:')) { const m = TOPIC_MENU.find(x => slug(x[1]) === id.slice(5)); if (m) S.topics.push(topicFromMenu(m)); }
+  else { const x = byId(S.topics, id); if (x) x.focus = !x.focus; }
+  save(); refreshSheet();
+};
+A.setupHabit = el => {
+  const id = el.dataset.id;
+  if (id.startsWith('menu:')) { const m = HABIT_MENU.find(x => slug(x[1]) === id.slice(5)); if (m) S.habits.push(habitFromMenu(m)); }
+  else if (Object.values(S.habitLog).some(l => l[id] !== undefined)) return toast('This habit has history. Manage it in Track → Habits');
+  else S.habits = S.habits.filter(h => h.id !== id);
+  save(); refreshSheet();
+};
 F.setupSave = o => {
   Object.assign(S.settings, { name: o.name, about: o.about, reminderTime: o.reminderTime || '08:00', setupDone: true });
   save(); closeSheet(); render();
@@ -855,8 +886,8 @@ const topicLabel = id => { const t = topicOf(id); return t ? `${t.emoji} ${t.nam
 VIEWS.learn = () => {
   const sub = R.sub.learn;
   let html = header('Learn', 'Knowledge hub', `<button class="icon-btn solid" data-a="libAdd" aria-label="Add source">＋</button>`);
-  html += seg('learn', [['library', 'Library'], ['topics', 'Topics'], ['ask', 'Ask Claude'], ['saved', 'Saved']]);
-  return html + ({ library: learnLibrary, topics: learnTopics, ask: learnAsk, saved: learnSaved }[sub] || learnLibrary)();
+  html += seg('learn', [['feed', 'Feed'], ['library', 'Library'], ['topics', 'Topics'], ['ask', 'Ask'], ['saved', 'Saved']]);
+  return html + ({ feed: learnFeed, library: learnLibrary, topics: learnTopics, ask: learnAsk, saved: learnSaved }[sub] || learnFeed)();
 };
 
 function learnLibrary() {
@@ -885,9 +916,9 @@ A.libAdd = el => openSourceForm(null, el && el.dataset.topic);
 function openSourceForm(id, topic) {
   const it = id ? byId(S.library, id) : { type: 'book', status: 'want', priority: 2, topic: topic || '' };
   openSheet(id ? 'Edit source' : 'Add source', () => `<form data-f="libSave" data-id="${id || ''}">
-    ${field('Title', `<input type="text" name="title" value="${esc(it.title)}" required placeholder="e.g. The Price of Time">`)}
+    ${field('Title', `<input type="text" name="title" value="${esc(it.title)}" required placeholder="e.g. Thinking, Fast and Slow">`)}
     <div class="two">${field('Type', `<select name="type">${opts(SRC_TYPES, it.type)}</select>`)}${field('Status', `<select name="status">${opts([['want', 'Want to read'], ['reading', 'Reading'], ['done', 'Done']], it.status)}</select>`)}</div>
-    ${field('Author / outlet', `<input type="text" name="author" value="${esc(it.author)}" placeholder="e.g. Edward Chancellor">`)}
+    ${field('Author / outlet', `<input type="text" name="author" value="${esc(it.author)}" placeholder="e.g. Daniel Kahneman">`)}
     ${field('Link (optional)', `<input type="url" name="url" value="${esc(it.url)}" placeholder="https://…" inputmode="url">`)}
     <div class="two">${field('Topic', `<select name="topic"><option value="">None</option>${opts(S.topics.map(t => [t.id, `${t.emoji} ${t.name}`]), it.topic)}</select>`)}${field('Priority', `<select name="priority">${opts([[1, 'High'], [2, 'Normal'], [3, 'Low']], it.priority || 2)}</select>`)}</div>
     ${field('Why read it / notes', `<textarea name="notes" placeholder="Why it matters to you, who recommended it…">${esc(it.notes)}</textarea>`)}
@@ -974,11 +1005,15 @@ function learnTopics() {
     return `<div class="card"><div class="card-head"><h3>${t.emoji} ${esc(t.name)} ${t.focus ? '⭐' : ''}</h3><button class="link" data-a="topicEdit" data-id="${t.id}">Edit</button></div>
       ${t.goal ? `<div class="small mb">${esc(t.goal)}</div>` : ''}
       <div class="row small muted mb">${pill(esc(t.level || 'Beginner'))}<span>${done} done · ${reading} reading · ${want} on list</span></div>
-      <div class="btn-row"><button class="btn soft sm" data-a="ask" data-type="${topicAskType(t.id)}" data-topic="${t.id}">✨ Ask Claude</button><button class="btn soft sm" data-a="libAdd" data-topic="${t.id}">＋ Source</button><button class="btn soft sm" data-a="topicLib" data-id="${t.id}">Library</button></div></div>`;
+      <div class="btn-row"><button class="btn soft sm" data-a="ask" data-type="${topicAskType(t)}" data-topic="${t.id}">✨ Ask Claude</button><button class="btn soft sm" data-a="libAdd" data-topic="${t.id}">＋ Source</button><button class="btn soft sm" data-a="topicLib" data-id="${t.id}">Library</button></div></div>`;
   }).join('');
   return html + `<button class="btn soft block" data-a="topicEdit">＋ Add topic</button>`;
 }
-function topicAskType(id) { return { invest: 'invest', model: 'model', sport: 'sport', islam: 'islam', culture: 'country', news: 'briefing' }[id] || 'reading'; }
+// Which Ask Claude type suits a topic, judged from its id and name (works for any topics the user creates).
+const TOPIC_KIND = [['invest', /invest|wealth|financ|money|market/i], ['sport', /health|sport|fitness|train|exercise/i], ['faith', /relig|faith|spirit|scripture/i],
+  ['model', /model|data|statistic|research/i], ['country', /countr|cultur|travel|geograph/i], ['briefing', /news|work|current/i]];
+function topicKind(t) { const hay = `${t.id} ${t.name}`; const k = TOPIC_KIND.find(([, re]) => re.test(hay)); return k ? k[0] : null; }
+function topicAskType(t) { return topicKind(t) || 'reading'; }
 A.topicLib = el => { R.sub.learn = 'library'; R.filters.libTopic = el.dataset.id; R.filters.libStatus = 'all'; render(); };
 A.topicEdit = el => {
   const id = el.dataset.id; const t = id ? byId(S.topics, id) : { emoji: '📌', level: 'Beginner', focus: true };
@@ -1009,27 +1044,27 @@ A.topicDel = el => { if (!confirm('Delete this topic? Sources stay in your libra
      2) In-app (optional): your own Anthropic API key, billed per use.
    ========================================================================= */
 const ASK_TYPES = [
-  { id: 'briefing', icon: '📰', title: 'Daily briefing', desc: 'Recent credible news on your topics, explained', topics: 'focus', qLabel: 'Anything to focus on? (optional)', qPh: 'e.g. Gulf economies, oil prices, AI regulation', adds: true,
+  { id: 'briefing', icon: '📰', title: 'Daily briefing', desc: 'Recent credible news on your topics, explained', topics: 'focus', qLabel: 'Anything to focus on? (optional)', qPh: 'e.g. energy markets, AI regulation, elections', adds: true,
     ask: q => `Give me today's briefing: the most important developments from the last 7 days for each of my topics below${q ? `, with extra attention to: ${q}` : ''}. For each: what happened, why it matters, and one credible source worth reading in full. Then suggest one deeper article or book that builds lasting knowledge rather than just news.` },
-  { id: 'reading', icon: '📚', title: 'What to read next', desc: 'Books, articles, papers and podcasts at your level', topics: 'focus', qLabel: 'What do you want to understand better? (optional)', qPh: 'e.g. how sovereign wealth funds invest', adds: true,
+  { id: 'reading', icon: '📚', title: 'What to read next', desc: 'Books, articles, papers and podcasts at your level', topics: 'focus', qLabel: 'What do you want to understand better? (optional)', qPh: 'e.g. how central banks set interest rates', adds: true,
     ask: q => `Suggest what I should read, watch or listen to next to deepen my knowledge${q ? `, specifically: ${q}` : ' in the topics below'}. Give 5–7 picks across formats (books, long-form articles, papers, podcasts, lectures), matched to my level, mixing foundational classics with recent work. Don't repeat anything already in my library.` },
-  { id: 'plan', icon: '🧭', title: 'Learning plan', desc: 'A 4-week path to go deep on one subject', topics: 'pick', qLabel: 'What do you want to learn?', qPh: 'e.g. options pricing, Arabic grammar, macro forecasting', adds: true,
+  { id: 'plan', icon: '🧭', title: 'Learning plan', desc: 'A 4-week path to go deep on one subject', topics: 'pick', qLabel: 'What do you want to learn?', qPh: 'e.g. options pricing, a new language, forecasting', adds: true,
     ask: q => `Build me a 4-week learning plan for ${q || 'the topic below'}: weekly goals, what to read or watch each week (about 30–45 minutes a day), one small practice task per week, and a quick way to check I've really understood it.` },
-  { id: 'invest', icon: '💹', title: 'Investment research', desc: 'News, data and risks to weigh before deciding', topics: ['invest', 'econ'], qLabel: 'What are you researching?', qPh: 'e.g. a stock, an ETF, gold, a sector, a currency', adds: true,
+  { id: 'invest', icon: '💹', title: 'Investment research', desc: 'News, data and risks to weigh before deciding', topics: 'kind:invest', qLabel: 'What are you researching?', qPh: 'e.g. a stock, an ETF, gold, a sector, a currency', adds: true,
     ask: q => `I'm researching ${q || 'an investment or trading decision'}. Give me what an informed investor would weigh: the latest news and filings, key numbers and valuation, macro and sector context, the bull and bear cases, main risks, and what would change the picture. Point me to primary sources. Don't tell me what to buy or sell. Help me think it through and decide for myself.` },
-  { id: 'model', icon: '🧮', title: 'Help with my model', desc: 'Methods, data sources and checks', topics: ['model'], qLabel: 'Describe the model and where you are stuck', qPh: 'e.g. panel regression of X on Y, worried about endogeneity…', adds: true,
+  { id: 'model', icon: '🧮', title: 'Help with my model', desc: 'Methods, data sources and checks', topics: 'kind:model', qLabel: 'Describe the model and where you are stuck', qPh: 'e.g. a demand forecast; unsure how to validate it', adds: true,
     ask: q => `Help me with a model I'm building${q ? `: ${q}` : ''}. Suggest suitable methods, data sources, validation and robustness checks, and common pitfalls, plus 2–3 high-quality references (papers, textbooks or tutorials). Ask me any questions you need answered to give better advice.` },
-  { id: 'sport', icon: '🏋️', title: 'Sports coaching', desc: 'Technique, drills and a weekly plan', topics: ['sport'], qLabel: 'Which sport, and what do you want to improve?', qPh: 'e.g. cycling climbing power, deadlift form', adds: true,
+  { id: 'sport', icon: '🏋️', title: 'Sports coaching', desc: 'Technique, drills and a weekly plan', topics: 'kind:sport', qLabel: 'Which sport, and what do you want to improve?', qPh: 'e.g. swimming technique, deadlift form', adds: true,
     ask: q => `Coach me on ${q || 'the sport I practise'}: technique cues for my level, 3–4 drills, a simple weekly plan, recovery advice, and credible sources (coaches, sports science) to learn more.` },
-  { id: 'country', icon: '🌍', title: 'Country deep-dive', desc: 'Economy, culture, history and nature of a place', topics: ['culture', 'econ'], qLabel: 'Which country or region?', qPh: 'e.g. Indonesia, the Caucasus, Morocco', adds: true,
+  { id: 'country', icon: '🌍', title: 'Country deep-dive', desc: 'Economy, culture, history and nature of a place', topics: 'kind:country', qLabel: 'Which country or region?', qPh: 'e.g. Indonesia, Peru, Morocco', adds: true,
     ask: q => `Give me a deep-dive on ${q || 'a country I should know better (pick one that fits my interests)'}: the economy (structure, recent performance, key data), politics and recent news, a short history, culture and society, nature and geography. End with the best books and long reads to go further.` },
-  { id: 'islam', icon: '🕌', title: 'Islamic studies', desc: 'Study a theme with sources and scholarship', topics: ['islam'], qLabel: 'Which theme or question?', qPh: 'e.g. patience (sabr), the ethics of trade, a surah', adds: true,
-    ask: q => `Help me study ${q || 'a theme in Islam that would deepen my understanding'}. Explain it with Qur'an references (surah:ayah) and hadith (collection and number, with grading where relevant), note where scholars differ, suggest one practical reflection for this week, and recommend reputable books and scholars.` },
+  { id: 'faith', icon: '📜', title: 'Faith study', desc: 'Study a theme with primary texts and scholarship', topics: 'kind:faith', qLabel: 'Which theme or question?', qPh: 'e.g. patience, the ethics of trade, a chapter of scripture', adds: true,
+    ask: q => `Help me study ${q || 'a theme in my faith that would deepen my understanding'}. Explain it with precise references to primary texts (chapter and verse, or collection and number with authenticity grading where relevant), note where scholars differ, suggest one practical reflection for this week, and recommend reputable books and scholars.` },
   { id: 'review', icon: '🔁', title: 'Review what I read', desc: 'Quiz me and connect ideas', topics: 'none', qLabel: 'Anything specific? (optional)', qPh: 'e.g. focus on the chapters about credit cycles', adds: true, lib: true,
     ask: (q, x) => `Help me consolidate what I've been reading${x.item ? `, especially "${x.item.title}"${x.item.author ? ` by ${x.item.author}` : ''}` : ''}${q ? ` (${q})` : ''}. Ask me 5 questions that test real understanding (one at a time if we keep chatting), connect the ideas to my other topics, and suggest what to read next to build on them.` },
-  { id: 'explore', icon: '✨', title: 'Expand my horizons', desc: 'Something new and worth knowing', topics: 'none', qLabel: 'Any direction? (optional)', qPh: 'e.g. history of science, ocean life, early Islamic Spain', adds: true,
+  { id: 'explore', icon: '✨', title: 'Expand my horizons', desc: 'Something new and worth knowing', topics: 'none', qLabel: 'Any direction? (optional)', qPh: 'e.g. history of science, ocean life, ancient cities', adds: true,
     ask: q => `Expand my horizons: introduce one fascinating idea, place, discovery or debate I probably don't know about${q ? ` (around: ${q})` : ''}, drawn from economics, history, science, nature, culture or faith. Explain why it matters, then give the best 2–3 sources to go deeper.` },
-  { id: 'week', icon: '🔁', title: 'Weekly review', desc: 'Honest look at your week + next week\'s focus', topics: 'none', qLabel: 'Anything on your mind about this week? (optional)', qPh: 'e.g. I lost momentum on the model mid-week', adds: false, search: false,
+  { id: 'week', icon: '🔁', title: 'Weekly review', desc: 'Honest look at your week + next week\'s focus', topics: 'none', qLabel: 'Anything on your mind about this week? (optional)', qPh: 'e.g. I lost momentum mid-week', adds: false, search: false,
     ask: q => `Here are my numbers for the last 7 days from my self-development app. Give me an honest weekly review: what went well, what slipped, any patterns you notice, and 3 focused goals for next week. Keep it short and specific. Don't just praise me.${q ? `\n\nMy note: ${q}` : ''}` },
   { id: 'reflect', icon: '🪞', title: 'Reflect on my entry', desc: 'Thoughtful questions on a journal entry', topics: 'none', hidden: true, qLabel: 'What would you like help with? (optional)', qPh: 'e.g. why do I keep procrastinating?', adds: false, search: false,
     ask: q => `Here's an entry from my private journal. Reflect back what you notice (patterns, feelings, what went well), ask me one or two good questions, and suggest one small, concrete action for tomorrow. Be warm but honest. Don't just validate me.${q ? `\n\nWhat I'd like help with: ${q}` : ''}` },
@@ -1053,7 +1088,7 @@ function newAsk(type, extra = {}) {
   let topics = [];
   if (extra.topic) topics = [extra.topic];
   else if (t.topics === 'focus') topics = S.topics.filter(x => x.focus).map(x => x.id);
-  else if (Array.isArray(t.topics)) topics = t.topics.filter(id => topicOf(id));
+  else if (typeof t.topics === 'string' && t.topics.startsWith('kind:')) topics = S.topics.filter(x => topicKind(x) === t.topics.slice(5)).map(x => x.id);
   return { type, topics, q: '', lib: t.lib || S.settings.includeLibrary, notes: S.settings.includeNotes, ...extra };
 }
 
@@ -1091,6 +1126,7 @@ function weekStats() {
   const jj = S.journal.filter(j => inW(j.date) && j.type !== 'legacy'); if (jj.length) L.push(`Journal: ${jj.length} entries, average day rating ${avg(jj.filter(j => j.rating), j => j.rating).toFixed(1)}/10`);
   const pr = S.practice.filter(p => inW(p.date)); if (pr.length) L.push(`Language practice: ${fmtMin(sum(pr, p => p.minutes))}`);
   const it = S.interactions.filter(i => inW(i.date)); if (it.length) L.push(`Time with people: ${it.length} interactions`);
+  const fd = Object.entries(S.feed.days).filter(([d]) => inW(d)).map(([, v]) => v); if (fd.length) { const items = fd.flatMap(v => v.items); L.push(`Growth feed: ${fd.filter(v => v.finished).length}/${fd.length} days finished, ${items.filter(i => i.state === 'done' || i.state === 'saved').length} picks read or saved, ${items.filter(i => i.state === 'skip').length} skipped`); }
   return L.join('\n');
 }
 
@@ -1168,7 +1204,11 @@ A.pasteReply = () => {
 };
 CH.pasteText = el => { PASTE.text = el.value; };
 A.pasteFromClipboard = async () => { try { PASTE.text = await navigator.clipboard.readText(); refreshSheet(); } catch (e) { toast('Long-press the box and choose Paste'); } };
-A.pasteParse = () => { PASTE.items = parseSuggestions(PASTE.text).map(x => ({ ...x, on: !dupTitle(x.title) })); refreshSheet(); };
+A.pasteParse = () => {
+  const f = parseFeed(PASTE.text);
+  if (f.length) { const n = importFeed(f); closeSheet(); R.tab = 'learn'; R.sub.learn = 'feed'; render(); return toast(`${n} cards added to today's feed`); }
+  PASTE.items = parseSuggestions(PASTE.text).map(x => ({ ...x, on: !dupTitle(x.title) })); refreshSheet();
+};
 function pasteResults() {
   const it = PASTE.items;
   return `${it.length ? `<div class="section-label">Found ${it.length} pick${it.length > 1 ? 's' : ''}</div>${it.map((x, i) => sugCard(x, `data-a="pasteToggle" data-i="${i}"`, x.on)).join('')}
@@ -1297,6 +1337,224 @@ A.savedOpen = el => {
 };
 A.savedDel = el => { if (!confirm('Delete this saved reply?')) return; S.claudeLog = S.claudeLog.filter(x => x.id !== el.dataset.id); save(); closeSheet(); refresh(); };
 A.noop2 = (el, e) => { window.open(el.href, '_blank'); };
+
+/* =========================================================================
+   GROWTH FEED: a short, finite daily feed tailored to your topics.
+   Rotates through the topics marked ⭐, a few per day. One tap opens Claude
+   with the request (Claude searches the web); paste the reply back once and
+   the picks become cards. When every card is handled, you're done for today.
+   ========================================================================= */
+const FEED_FMT = n => `Reply with exactly ${n} items and nothing else apart from one short opening line. Put each item on its own line in exactly this format so my app can import it:
+FEED: topic | type | title | author or outlet | url | publication date | why it fits me | one-line takeaway
+(type is one of: article, paper, report, book, podcast, video, course, news; topic is one of the topic names below)`;
+
+function feedPool() { return S.topics.filter(t => t.focus); }
+// Topics shown least recently come first, so manual swaps are respected and every ⭐ topic gets its turn.
+function lastShown(id) { let last = ''; for (const [d, v] of Object.entries(S.feed.days)) if (v.topics.includes(id) && d > last) last = d; return last; }
+function pickFeedTopics() {
+  const pool = feedPool(); if (!pool.length) return [];
+  const always = S.feed.always.filter(id => pool.some(t => t.id === id));
+  const rest = pool.filter(t => !always.includes(t.id)).map((t, i) => ({ id: t.id, i, last: lastShown(t.id) }))
+    .sort((a, b) => a.last.localeCompare(b.last) || a.i - b.i);
+  const n = Math.max(0, Math.min(S.feed.aspectsPerDay, pool.length) - always.length);
+  return [...always, ...rest.slice(0, n).map(x => x.id)];
+}
+function feedPlan() {
+  const d = today();
+  if (!S.feed.plan || S.feed.plan.date !== d) { S.feed.plan = { date: d, topics: pickFeedTopics(), asked: false }; save(); }
+  S.feed.plan.topics = S.feed.plan.topics.filter(id => topicOf(id));
+  return S.feed.plan;
+}
+const feedDay = (d = today()) => S.feed.days[d];
+const feedCount = () => Math.max(3, feedPlan().topics.length * S.feed.perAspect);
+
+function feedPrompt() {
+  const plan = feedPlan(), tps = plan.topics.map(topicOf).filter(Boolean), n = feedCount();
+  const parts = [`Build my growth feed for today (${fmtLong(today())}): ${n} items, about ${S.feed.perAspect} for each topic below. For each topic mix something recent (news, article or report from the last few weeks) with something lasting (a book, paper, lecture or classic long read). Every item must be real, credible and findable: peer-reviewed research, official statistics, international organisations, established outlets, well-reviewed books. Match my level and goals, and say in one line why each item fits me.`];
+  const me = [];
+  if (S.settings.about) me.push(`About me: ${S.settings.about}`);
+  if (tps.length) me.push("Today's topics:\n" + tps.map(x => `- ${x.name} (${x.level || 'Beginner'})${x.goal ? `: goal: ${x.goal}` : ''}${x.notes ? `. ${x.notes}` : ''}`).join('\n'));
+  if (S.settings.includeLibrary) { const lc = libraryContext(); if (lc) me.push(lc); }
+  parts.push('About me:\n' + me.join('\n'));
+  const seen = []; Object.keys(S.feed.days).sort().forEach(d => S.feed.days[d].items.forEach(i => seen.push(i.title)));
+  if (seen.length) parts.push("Already in my feed, don't repeat: " + seen.slice(-30).map(t => `"${t}"`).join('; '));
+  if (S.feed.nope.length) parts.push('I marked these as not for me, so avoid similar ones: ' + S.feed.nope.slice(-15).map(x => `"${x.title}"${x.source ? ` (${x.source})` : ''}`).join('; '));
+  parts.push(GUIDE());
+  parts.push(FEED_FMT(n));
+  return parts.join('\n\n');
+}
+
+function matchTopic(name) {
+  const n = String(name || '').toLowerCase().replace(/[^\p{L}\p{N}& ]/gu, '').trim();
+  if (!n) return '';
+  const t = S.topics.find(x => x.name.toLowerCase() === n || x.id === n) || S.topics.find(x => x.name.toLowerCase().includes(n) || n.includes(x.name.toLowerCase()));
+  return t ? t.id : '';
+}
+function parseFeed(text) {
+  const out = [];
+  for (const raw of String(text || '').split('\n')) {
+    const line = raw.replace(/\*\*/g, '').replace(/^[\s>*\-•`\d.)]+/, '').trim();
+    const m = line.match(/^FEED:\s*(.+)$/i); if (!m) continue;
+    const p = m[1].replace(/`+$/, '').split('|').map(s => s.trim());
+    const [tp, type, title, source = '', url = '', date = '', why = '', ...rest] = p;
+    if (!title) continue;
+    const link = (url || '').match(/https?:\/\/[^\s)\]]+/);
+    out.push({ id: uid(), topic: matchTopic(tp), type: normType(type), title: title.replace(/^["“]|["”]$/g, ''), source, url: link ? link[0] : '', date: /^(n\/?a|none|-)$/i.test(date) ? '' : date, why, takeaway: rest.join(' | '), state: 'new' });
+  }
+  return out;
+}
+function importFeed(items) {
+  const d = today(), plan = feedPlan();
+  const day = S.feed.days[d] = S.feed.days[d] || { items: [], topics: plan.topics.slice(), finished: false };
+  const titles = new Set(day.items.map(i => i.title.toLowerCase()));
+  let added = 0;
+  items.forEach(i => { if (!titles.has(i.title.toLowerCase())) { day.items.push(i); titles.add(i.title.toLowerCase()); added++; } });
+  if (added) day.finished = false;
+  Object.keys(S.feed.days).forEach(k => { if (daysBetween(k, d) > 60) delete S.feed.days[k]; });
+  save();
+  return added;
+}
+
+/* ---------- Feed screen (Learn → Feed) ---------- */
+function learnFeed() {
+  const plan = feedPlan(), day = feedDay(), tps = plan.topics.map(topicOf).filter(Boolean);
+  const api = S.settings.claudeMode === 'api' && S.settings.apiKey;
+  let html = `<div class="card"><div class="card-head"><h3>🌱 Today's feed</h3><button class="link" data-a="feedSettings">Settings</button></div>
+    <div class="chips wrap">${feedPool().map(t => `<button class="chip ${plan.topics.includes(t.id) ? 'on' : ''}" data-a="feedTopic" data-id="${t.id}">${t.emoji} ${esc(t.name)}</button>`).join('') || '<span class="small muted">Mark topics with ⭐ in Learn → Topics to build your feed.</span>'}</div>
+    <div class="small muted mt">${tps.length ? `${feedCount()} picks · rotates through your ⭐ topics, ${S.feed.aspectsPerDay} a day` : ''}</div>`;
+  if (!day || !day.items.length) {
+    html += `<div class="mt">${api ? `<div class="btn-row mb"><button class="btn primary" data-a="feedApi" ${tps.length ? '' : 'disabled'}>✨ Get it here</button><button class="btn soft" data-a="feedGet" ${tps.length ? '' : 'disabled'}>Open in Claude</button></div>`
+      : `<button class="btn ${plan.asked ? 'soft' : 'primary'} block mb" data-a="feedGet" ${tps.length ? '' : 'disabled'}>✨ Get today's feed in Claude</button>`}
+      <button class="btn ${plan.asked ? 'primary' : ''} block" data-a="feedPaste">📋 Paste Claude's reply</button>
+      <div class="small muted mt">${plan.asked ? 'When Claude has answered, copy the whole reply and paste it here.' : 'Claude searches the web and replies with lines starting with FEED:. Copy its reply and paste it here.'}</div>
+      <details class="mt"><summary class="small" style="color:var(--accent);cursor:pointer">See exactly what will be sent</summary><textarea class="prompt-box" readonly>${esc(feedPrompt())}</textarea></details></div></div>`;
+  } else {
+    const done = day.items.filter(i => i.state !== 'new').length;
+    html += `<div class="mt">${bar(done / day.items.length, 'var(--ok)')}<div class="row small muted mt"><span>${done}/${day.items.length} handled</span><span class="spacer"></span><button class="link small" data-a="feedPaste" style="border:0;background:none;color:var(--accent);cursor:pointer">＋ Paste more</button></div></div></div>`;
+    if (day.finished) html += `<div class="banner" style="background:var(--ok-soft)">🌱 <b style="color:var(--ok)">You're done for today.</b> Saved picks are in your Library. See you tomorrow.</div>`;
+    const order = { new: 0, saved: 1, done: 2, skip: 3 };
+    html += day.items.slice().sort((a, b) => order[a.state] - order[b.state]).map(i => feedCard(i, today())).join('');
+  }
+  const past = Object.keys(S.feed.days).filter(k => k !== today()).sort().reverse().slice(0, 7);
+  if (past.length) html += `<div class="section-label">Earlier</div><div class="card tight"><ul class="list">${past.map(k => { const d = S.feed.days[k]; const h = d.items.filter(i => i.state !== 'new').length; return `<li class="li" data-a="feedPast" data-d="${k}"><div class="ico">${d.finished ? '✅' : '🌱'}</div><div class="body"><div class="title">${fmtLong(k)}</div><div class="meta">${d.topics.map(id => (topicOf(id) || {}).name).filter(Boolean).join(' · ')} · ${h}/${d.items.length}</div></div><span class="chev">›</span></li>`; }).join('')}</ul></div>`;
+  return html;
+}
+function feedCard(i, d) {
+  const t = topicOf(i.topic), typeL = (SRC_TYPES.find(x => x[0] === i.type) || [0, '🔖 Source'])[1];
+  const st = { saved: pill('Saved', 'acc'), done: pill('Done', 'ok'), skip: pill('Not for me') }[i.state] || '';
+  return `<div class="card feed-card ${i.state === 'new' ? '' : 'dim'}">
+    <div class="row small" style="gap:8px">${t ? pill(`${t.emoji} ${esc(t.name)}`, 'acc') : ''}<span class="muted">${typeL}</span><span class="spacer"></span>${st}</div>
+    <div class="feed-title">${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener" data-a="feedOpen" data-d="${d}" data-id="${i.id}">${esc(i.title)} ↗</a>` : esc(i.title)}</div>
+    <div class="small muted">${esc(i.source)}${i.date ? ` · ${esc(i.date)}` : ''}</div>
+    ${i.why ? `<div class="small mt"><b>Why for you:</b> ${esc(i.why)}</div>` : ''}
+    ${i.takeaway ? `<div class="small mt muted">💡 ${esc(i.takeaway)}</div>` : ''}
+    ${i.note ? `<div class="small mt">✍️ ${esc(i.note)}</div>` : ''}
+    <div class="feed-actions">${i.state === 'new'
+      ? `<button class="btn ok" data-a="feedSet" data-v="done" data-d="${d}" data-id="${i.id}">✓ Done</button><button class="btn soft" data-a="feedSet" data-v="saved" data-d="${d}" data-id="${i.id}">＋ Save</button><button class="btn" data-a="feedNote" data-d="${d}" data-id="${i.id}">✍️ Note</button><button class="btn" data-a="feedSet" data-v="skip" data-d="${d}" data-id="${i.id}">✕</button>`
+      : `<button class="btn ghost sm" data-a="feedNote" data-d="${d}" data-id="${i.id}">✍️ Note</button><button class="btn ghost sm" data-a="feedUndo" data-d="${d}" data-id="${i.id}">Undo</button>`}</div></div>`;
+}
+const feedItem = (d, id) => ((S.feed.days[d] || {}).items || []).find(i => i.id === id);
+
+A.feedTopic = el => {
+  const plan = feedPlan(), id = el.dataset.id;
+  plan.topics = plan.topics.includes(id) ? plan.topics.filter(x => x !== id) : [...plan.topics, id];
+  save(); refresh();
+};
+A.feedGet = () => {
+  const p = feedPrompt();
+  copyText(p);
+  const url = 'https://claude.ai/new?q=' + encodeURIComponent(p.slice(0, 12000));
+  const w = window.open(url, '_blank'); if (!w) location.href = url;
+  feedPlan().asked = true; save();
+  toast('Request copied. If Claude opens empty, just paste.');
+  award('claude', 'Learning with Claude', 'claude:' + today());
+  setTimeout(render, 400);
+};
+A.feedApi = async () => {
+  const t = { loading: true, error: '' };
+  openSheet("🌱 Today's feed", () => t.loading ? `<div class="empty"><span class="e">✨</span>Claude is searching the web for today's picks…<br><span class="tiny">Usually 30–90 seconds.</span></div>` : `<div class="banner warn"><b>Couldn't reach Claude.</b> ${esc(t.error)}</div>`);
+  try {
+    const r = await callClaude(feedPrompt());
+    const items = parseFeed(r.text);
+    if (!items.length) throw new Error('The reply had no FEED lines. Try again or use Open in Claude.');
+    importFeed(items); award('claude', 'Learning with Claude', 'claude:' + today());
+    closeSheet(); render(); toast(`${items.length} picks added`);
+  } catch (e) { t.loading = false; t.error = e.message; refreshSheet(); }
+};
+let FPASTE = '';
+A.feedPaste = () => {
+  FPASTE = '';
+  openSheet("Paste Claude's reply", () => `<div class="small muted mb">Copy Claude's whole answer and paste it here. Lines starting with FEED: become today's cards.</div>
+    <textarea class="big" data-ch="feedPasteText" placeholder="Paste here…">${esc(FPASTE)}</textarea>
+    <div class="btn-row mt"><button class="btn" data-a="feedClip">Paste from clipboard</button><button class="btn primary" data-a="feedImport">Add to feed</button></div>`);
+};
+CH.feedPasteText = el => { FPASTE = el.value; };
+A.feedClip = async () => { try { FPASTE = await navigator.clipboard.readText(); refreshSheet(); } catch (e) { toast('Long-press the box and choose Paste'); } };
+A.feedImport = () => {
+  let items = parseFeed(FPASTE);
+  if (!items.length) items = parseSuggestions(FPASTE).map(x => ({ id: uid(), topic: '', type: x.type, title: x.title, source: x.author, url: x.url, date: '', why: x.why, takeaway: '', state: 'new' }));
+  if (!items.length) return toast('No picks found. Paste the reply that has FEED: lines');
+  const n = importFeed(items);
+  closeSheet(); R.tab = 'learn'; R.sub.learn = 'feed'; render();
+  toast(n ? `${n} cards added to today's feed` : 'Those cards are already in your feed');
+};
+A.feedOpen = el => { const i = feedItem(el.dataset.d, el.dataset.id); if (i) { i.opened = true; save(); window.open(i.url, '_blank'); } };
+A.feedSet = el => {
+  const d = el.dataset.d, i = feedItem(d, el.dataset.id); if (!i) return;
+  i.state = el.dataset.v;
+  if (i.state === 'saved') {
+    const it = addSuggestion({ type: i.type, title: i.title, author: i.source, url: i.url, why: i.why }, i.topic);
+    const lib = it || S.library.find(x => x.title.toLowerCase() === i.title.toLowerCase());
+    if (lib) { if (i.takeaway && !lib.notes) lib.notes = i.takeaway; if (i.note) lib.takeaways = (lib.takeaways ? lib.takeaways + '\n' : '') + i.note; }
+  }
+  if (i.state === 'done' || i.state === 'saved') award('feed_read', i.title.slice(0, 40), 'fr:' + i.id, d === today() ? today() : d);
+  if (i.state === 'skip') { S.feed.nope.push({ title: i.title, source: i.source, topic: i.topic }); if (S.feed.nope.length > 60) S.feed.nope.shift(); }
+  const day = S.feed.days[d];
+  if (day.items.every(x => x.state !== 'new') && !day.finished) { day.finished = true; award('feed_done', "Finished today's feed", 'fd:' + d); }
+  save(); refresh();
+};
+A.feedUndo = el => {
+  const d = el.dataset.d, i = feedItem(d, el.dataset.id); if (!i) return;
+  if (i.state === 'skip') S.feed.nope = S.feed.nope.filter(x => x.title !== i.title);
+  i.state = 'new'; save(); refresh();
+};
+A.feedNote = el => {
+  const d = el.dataset.d, i = feedItem(d, el.dataset.id); if (!i) return;
+  openSheet('Note', () => `<div class="small muted mb">${esc(i.title)}</div><form data-f="feedNoteSave" data-d="${d}" data-id="${i.id}"><textarea name="note" placeholder="What stood out? How does it connect to your goals?">${esc(i.note)}</textarea><button class="btn primary block mt">Save note</button></form>`);
+};
+F.feedNoteSave = (o, f) => {
+  const i = feedItem(f.dataset.d, f.dataset.id); if (!i) return;
+  i.note = o.note;
+  const lib = S.library.find(x => x.title.toLowerCase() === i.title.toLowerCase());
+  if (lib && o.note) lib.takeaways = (lib.takeaways ? lib.takeaways + '\n' : '') + o.note;
+  save(); closeSheet(); refresh();
+};
+A.feedPast = el => { const d = el.dataset.d; openSheet(fmtLong(d), () => (S.feed.days[d] ? S.feed.days[d].items.map(i => feedCard(i, d)).join('') : '')); };
+A.feedSettings = () => openSheet('Feed settings', () => `
+  <div class="section-label" style="margin-top:0">Cards per topic</div>
+  <div class="seg">${[1, 2, 3].map(n => `<button data-a="feedOpt" data-k="perAspect" data-v="${n}" class="${S.feed.perAspect === n ? 'on' : ''}">${n}</button>`).join('')}</div>
+  <div class="section-label">Topics per day</div>
+  <div class="seg">${[2, 3, 4, 7].map(n => `<button data-a="feedOpt" data-k="aspectsPerDay" data-v="${n}" class="${S.feed.aspectsPerDay === n ? 'on' : ''}">${n === 7 ? 'All' : n}</button>`).join('')}</div>
+  <div class="section-label">Always include</div>
+  <div class="chips wrap mb">${feedPool().map(t => `<button class="chip ${S.feed.always.includes(t.id) ? 'on' : ''}" data-a="feedAlways" data-id="${t.id}">${t.emoji} ${esc(t.name)}</button>`).join('')}</div>
+  <div class="hint">The feed rotates through topics marked ⭐ in Learn → Topics. Topics you always include appear every day.</div>
+  ${S.feed.nope.length ? `<button class="btn block mt" data-a="feedClearNope">Forget my ${S.feed.nope.length} "not for me" picks</button>` : ''}`);
+A.feedOpt = el => { S.feed[el.dataset.k] = Number(el.dataset.v); S.feed.plan = null; save(); refresh(); };
+A.feedAlways = el => { const id = el.dataset.id; S.feed.always = S.feed.always.includes(id) ? S.feed.always.filter(x => x !== id) : [...S.feed.always, id]; S.feed.plan = null; save(); refresh(); };
+A.feedClearNope = () => { S.feed.nope = []; save(); refresh(); toast('Cleared'); };
+
+// Today screen card
+function feedTodayCard() {
+  const plan = feedPlan(), day = feedDay(), tps = plan.topics.map(topicOf).filter(Boolean);
+  if (!feedPool().length) return '';
+  let body;
+  if (day && day.items.length) {
+    const done = day.items.filter(i => i.state !== 'new').length;
+    body = day.finished ? `<div class="small" style="color:var(--ok)">✅ Done for today: ${done} picks handled.</div>`
+      : `${bar(done / day.items.length, 'var(--ok)')}<div class="row small muted mt"><span>${done}/${day.items.length} handled</span><span class="spacer"></span><button class="btn primary sm" data-a="go" data-tab="learn" data-sub="feed">Continue</button></div>`;
+  } else body = `<div class="small muted mb">${tps.map(t => `${t.emoji} ${esc(t.name)}`).join(' · ')}</div><button class="btn primary block" data-a="go" data-tab="learn" data-sub="feed">Get today's ${feedCount()} picks</button>`;
+  return `<div class="card"><div class="card-head"><h3>🌱 Growth feed</h3><button class="link" data-a="go" data-tab="learn" data-sub="ask">More ways to ask</button></div>${body}</div>`;
+}
 
 /* =========================================================================
    JOURNAL: daily reflection + long-form legacy writing
@@ -1583,7 +1841,7 @@ A.sessionLog = () => { const t = S.timers.focus; openSessionSheet(t ? Math.max(1
 function openSessionSheet(minutes, projectId) {
   const plain = S.habits.filter(h => !h.parts);
   openSheet('Log focus session', () => `<form data-f="sessionSave">
-    ${field('What did you work on?', `<input type="text" name="topic" required placeholder="e.g. Model: robustness checks, App: share card">`)}
+    ${field('What did you work on?', `<input type="text" name="topic" required placeholder="e.g. Report draft, coding practice">`)}
     <div class="two">${field('Minutes', `<input type="number" name="minutes" value="${minutes}" min="1" max="600" inputmode="numeric">`)}${field('Date', `<input type="date" name="date" value="${today()}">`)}</div>
     ${field('Project', `<select name="projectId"><option value="">None</option>${opts(S.projects.filter(p => p.status !== 'completed').map(p => [p.id, p.name]), projectId)}</select>`)}
     ${field('Counts towards habit', `<select name="habit"><option value="">None</option>${opts(plain.map(h => [h.id, `${h.emoji} ${h.name}`]), '')}</select>`)}
@@ -1603,7 +1861,7 @@ A.sessionOpen = el => { const s = byId(S.sessions, el.dataset.id); openSheet(`${
 A.projEdit = el => {
   const id = el.dataset.id, p = id ? byId(S.projects, id) : { cat: PROJ_CATS[0], status: 'active', priority: 2, deadline: addDays(today(), 30) };
   openSheet(id ? 'Edit project' : 'New project', () => `<form data-f="projSave" data-id="${id || ''}">
-    ${field('Name', `<input type="text" name="name" value="${esc(p.name)}" required placeholder="e.g. Thesis chapter 3">`)}
+    ${field('Name', `<input type="text" name="name" value="${esc(p.name)}" required placeholder="e.g. Website redesign">`)}
     <div class="two">${field('Category', `<select name="cat">${opts(PROJ_CATS, p.cat)}</select>`)}${field('Status', `<select name="status">${opts(PROJ_STATUS, p.status)}</select>`)}</div>
     <div class="two">${field('Deadline', `<input type="date" name="deadline" value="${esc(p.deadline || '')}">`)}${field('Priority', `<select name="priority">${opts([[1, 'High'], [2, 'Normal'], [3, 'Low']], p.priority)}</select>`)}</div>
     ${field('Description', `<textarea name="desc" placeholder="Goal, context, definition of done…">${esc(p.desc)}</textarea>`)}
@@ -1751,7 +2009,7 @@ A.vocabAsk = () => {
 };
 A.practiceLog = () => openSheet(`Log ${S.settings.currentLang} practice`, () => `<form data-f="practiceSave">
   <div class="two">${field('Activity', `<select name="type">${opts(['Reading', 'Listening', 'Speaking', 'Writing', 'Grammar', 'Vocabulary', 'Other'])}</select>`)}${field('Minutes', `<input type="number" name="minutes" value="30" min="1" inputmode="numeric">`)}</div>
-  ${field('What did you use?', `<input type="text" name="title" placeholder="e.g. Al Jazeera article, podcast episode 5">`)}
+  ${field('What did you use?', `<input type="text" name="title" placeholder="e.g. news article, podcast episode 5">`)}
   ${field('Date', `<input type="date" name="date" value="${today()}">`)}
   ${field('Notes', `<textarea name="notes" placeholder="New words, difficulties…" style="min-height:60px"></textarea>`)}
   <button class="btn primary block">Save</button></form>`);
